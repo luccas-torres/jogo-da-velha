@@ -1,0 +1,15 @@
+{
+  "name": "jogo-da-velha",
+  "version": "1.0.0",
+  "description": "jogo da velha multiplayer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Luccas Torres",
+  "license": "ISC",
+  "dependencies": {
+    "uuid": "^11.0.3",
+    "ws": "^8.18.0"
+  }
+}

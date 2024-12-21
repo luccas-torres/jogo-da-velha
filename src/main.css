@@ -1,0 +1,193 @@
+*,
+*::after,
+*::before {
+  padding: 0px;
+  margin: 0px;
+  font-family: inherit;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  row-gap: 16px;
+  background-color: #f3f3f3;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-template-rows: repeat(3, 100px);
+  gap: 5px;
+}
+
+.cell {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: bold;
+  background-color: #fff;
+  border: 2px solid #ccc;
+  cursor: pointer;
+}
+
+.cell:hover {
+  background-color: #e0e0e0;
+}
+
+.restart {
+  border: none;
+  background-color: #ff9800;
+  color: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: bold;
+}
+
+.restart:hover {
+  background-color: #ff990045;
+  cursor: pointer;
+}
+
+/* Styles for X and O */
+.cell.x {
+  position: relative;
+}
+
+.cell.x::before {
+  content: "";
+  position: absolute;
+  width: 70%;
+  height: 5px;
+  background-color: #ff4d4d;
+  transform: rotate(45deg);
+  top: 50%;
+  left: 15%;
+  transform-origin: center;
+}
+
+.cell.x::after {
+  content: "";
+  position: absolute;
+  width: 70%;
+  height: 5px;
+  background-color: #ff4d4d;
+  transform: rotate(-45deg);
+  top: 50%;
+  left: 15%;
+  transform-origin: center;
+}
+
+.cell.o {
+  position: relative;
+}
+
+.cell.o::before {
+  content: "";
+  width: 60%;
+  height: 60%;
+  border: 5px solid #4d79ff;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Winning line */
+.winning-line {
+  position: absolute;
+  background-color: #4caf50;
+  height: 5px;
+  width: 0;
+  top: 50%;
+  left: 50%;
+  z-index: 500;
+  transform-origin: center;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transition: width 0.3s ease-in-out, height 0.3s ease-in-out;
+}
+
+.winning-line.horizontal-top {
+  width: 300px;
+  top: 16.6%;
+}
+
+.winning-line.horizontal-middle {
+  width: 300px;
+  top: 50%;
+}
+
+.winning-line.horizontal-bottom {
+  width: 300px;
+  top: 83.3%;
+}
+
+.winning-line.vertical-left {
+  height: 300px;
+  width: 5px;
+  left: 16.6%;
+}
+
+.winning-line.vertical-middle {
+  height: 300px;
+  width: 5px;
+  left: 50%;
+}
+
+.winning-line.vertical-right {
+  height: 300px;
+  width: 5px;
+  left: 83.3%;
+}
+
+.winning-line.diagonal {
+  width: 400px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.winning-line.anti-diagonal {
+  width: 400px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.opacity {
+  opacity: 0.7;
+}
+
+.block-game {
+  pointer-events: none;
+}
+
+/* Draw text */
+.draw-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ff9800;
+  background-color: #fff;
+  padding: 20px 40px;
+  border: 3px solid #ff9800;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.draw-message.winner {
+  color: green;
+  border: 3px solid green;
+}
+
+.draw-message.loser {
+  color: red;
+  border: 3px solid red;
+}
