@@ -1,4 +1,8 @@
-const socket = new WebSocket("ws://localhost:8080 ");
+const socket = new WebSocket(
+  window.location.hostname === "localhost"
+    ? "ws://localhost:8080"
+    : "wss://jogo-da-velha-ijfk.onrender.com"
+);
 
 let playerId = null;
 let isMyTurn = false;
