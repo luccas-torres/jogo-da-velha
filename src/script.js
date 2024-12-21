@@ -1,4 +1,4 @@
-const socket = new WebSocket("ws://localhost:8081 ");
+const socket = new WebSocket("ws://localhost:8080 ");
 
 let playerId = null;
 let isMyTurn = false;

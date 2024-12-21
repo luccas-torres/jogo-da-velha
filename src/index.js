@@ -1,62 +1,17 @@
-// const WebSocket = require("ws");
-// const { v4: uuidv4 } = require("uuid");
-// const wss = new WebSocket.Server({ port: 8081 });
-
-// let players = [];
-
-// wss.on("connection", (ws) => {
-//   console.log("Novo jogador conectado!");
-//   const playerId = uuidv4();
-//   players.push(ws);
-
-//   ws.send(JSON.stringify({ type: "assignId", playerId }));
-
-//   ws.on("message", (message) => {
-//     const data = JSON.parse(message);
-//     data.playerId = playerId;
-
-//     if (data.type === "move") {
-//       players.forEach((player) => {
-//         if (player !== ws) {
-//           player.send(JSON.stringify(data));
-//         }
-//       });
-//     }
-
-//     if (data.type === "winner") {
-//       players.forEach((player) => {
-//         player.send(JSON.stringify(data));
-//       });
-//     }
-
-//     if (data.type === "restart") {
-//       players.forEach((player) => {
-//         player.send(JSON.stringify({ type: "restart" }));
-//       });
-//     }
-
-//     if (data.type === "end") {
-//       players.forEach((player) => {
-//         player.send(JSON.stringify({ type: "end" }));
-//       });
-//     }
-//   });
-
-//   ws.on("close", () => {
-//     players = players.filter((player) => player !== ws);
-//     console.log("Um jogador desconectou!");
-//   });
-// });
-
-// console.log("Servidor WebSocket rodando na porta 8081!");
-
+const express = require("express");
+const http = require("http");
 const WebSocket = require("ws");
 const { v4: uuidv4 } = require("uuid");
 
-const wss = new WebSocket.Server({ port: 8081 });
 
 let players = []; // Lista de jogadores conectados
 let turn = null; // ID do jogador atual (quem deve jogar)
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+app.use(express.static("src"));
 
 wss.on("connection", (ws) => {
   const playerId = uuidv4();
@@ -128,4 +83,7 @@ wss.on("connection", (ws) => {
   }
 });
 
-console.log("Servidor WebSocket rodando na porta 8081!");
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
