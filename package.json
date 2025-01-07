@@ -2,7 +2,7 @@
   "name": "jogo-da-velha",
   "version": "1.0.0",
   "description": "jogo da velha multiplayer",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js"
@@ -13,9 +13,5 @@
     "express": "^4.21.2",
     "uuid": "^11.0.3",
     "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "gitignore": "^0.7.0",
-    "nvm": "^0.0.4"
   }
 }

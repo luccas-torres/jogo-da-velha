@@ -3,139 +3,87 @@ const http = require("http");
 const WebSocket = require("ws");
 const { v4: uuidv4 } = require("uuid");
 
+
+let players = []; // Lista de jogadores conectados
+let turn = null; // ID do jogador atual (quem deve jogar)
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-let switchTurn = false;
 
 app.use(express.static("src"));
-
-let salaCounter = 1;
-const salas = [];
-
-function criarSala() {
-  const sala = {
-    id: salaCounter++,
-    jogadores: [],
-    turn: null,
-  };
-  salas.push(sala);
-  return sala;
-}
-
-function encontrarSala(playerId) {
-  return salas.find((sala) =>
-    sala.jogadores.some((jogador) => jogador.playerId === playerId)
-  );
-}
-function notifyTurn(sala) {
-  if (!sala.turn) return;
-  sala.jogadores.forEach(({ ws }) => {
-    ws.send(JSON.stringify({ type: "turn", currentTurn: sala.turn }));
-  });
-}
 
 wss.on("connection", (ws) => {
   const playerId = uuidv4();
   console.log("Novo jogador conectado!", playerId);
 
-  let sala =
-    salas.length && salas[salas.length - 1].jogadores.length < 2
-      ? salas[salas.length - 1]
-      : criarSala();
+  players.push({ ws, playerId });
 
-  sala.jogadores.push({ ws, playerId });
-
-  ws.send(
-    JSON.stringify({
-      type: "assignId",
-      playerId,
-      sala: sala.id,
-    })
-  );
-
-  if (sala.jogadores.length === 2 && !sala.turn) {
-    sala.jogadores.forEach(({ ws }) => {
-      ws.send(
-        JSON.stringify({
-          type: "other-player-connected",
-          message: "Outro jogador entrou na sala!",
-        })
-      );
-    });
-    sala.turn = sala.jogadores[0].playerId;
-    notifyTurn(sala);
+  // Se dois jogadores já estão conectados, define o primeiro jogador como o turno inicial
+  if (players.length === 2 && turn === null) {
+    turn = players[0].playerId;
+    notifyTurn();
   }
+
+  // Envia o playerId para o jogador atual
+  ws.send(JSON.stringify({ type: "assignId", playerId }));
 
   ws.on("message", (message) => {
     const data = JSON.parse(message);
     data.playerId = playerId;
 
-    const sala = encontrarSala(playerId);
-    if (!sala) {
-      ws.send(
-        JSON.stringify({ type: "error", message: "Sala não encontrada!" })
-      );
-      return;
-    }
-
     if (data.type === "move") {
-      if (playerId === sala.turn) {
-        sala.jogadores.forEach(({ ws }) => {
-          ws.send(JSON.stringify(data));
+      if (playerId === turn) {
+        // Envia o movimento para todos os jogadores
+        players.forEach((player) => {
+          player.ws.send(JSON.stringify(data));
         });
 
-        const currentIndex = sala.jogadores.findIndex(
-          (jogador) => jogador.playerId === sala.turn
-        );
-        sala.turn =
-          sala.jogadores[(currentIndex + 1) % sala.jogadores.length].playerId;
-
-        notifyTurn(sala);
+        // Alterna o turno para o próximo jogador
+        turn = players.find((player) => player.playerId !== turn).playerId;
+        notifyTurn();
       } else {
+        // Movimento inválido (fora do turno)
         ws.send(JSON.stringify({ type: "error", message: "Não é sua vez!" }));
       }
     }
 
     if (data.type === "winner") {
-      sala.jogadores.forEach(({ ws }) => {
-        ws.send(JSON.stringify(data));
+      players.forEach((player) => {
+        player.ws.send(JSON.stringify(data));
       });
     }
 
-    if (["restart", "end"].includes(data.type)) {
-      sala.jogadores.forEach(({ ws }) => {
-        ws.send(JSON.stringify({ type: data.type }));
+    if (data.type === "restart") {
+      // Reinicia o jogo
+      turn = players[1].playerId; // Primeiro jogador inicia o turno
+      players.forEach((player) => {
+        player.ws.send(JSON.stringify({ type: "restart" }));
       });
+      notifyTurn();
+    }
 
-      if (data.type === "restart") {
-        switchTurn = !switchTurn;
-        sala.turn = switchTurn
-          ? sala.jogadores[1].playerId
-          : sala.jogadores[0].playerId;
-        notifyTurn(sala);
-      }
+    if (data.type === "end") {
+      // Envia mensagem de fim para todos
+      players.forEach((player) => {
+        player.ws.send(JSON.stringify({ type: "end" }));
+      });
     }
   });
 
   ws.on("close", () => {
-    const sala = encontrarSala(playerId);
-    if (sala) {
-      sala.jogadores = sala.jogadores.filter(
-        (jogador) => jogador.playerId !== playerId
-      );
-
-      if (!sala.jogadores.length) {
-        const index = salas.indexOf(sala);
-        if (index !== -1) salas.splice(index, 1);
-      }
-    }
-
-    console.log(`Jogador ${playerId} desconectou!`);
+    players = players.filter((player) => player.ws !== ws);
+    console.log("Um jogador desconectou!");
   });
+
+  function notifyTurn() {
+    players.forEach((player) => {
+      player.ws.send(JSON.stringify({ type: "turn", currentTurn: turn }));
+    });
+  }
 });
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
