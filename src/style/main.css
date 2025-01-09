@@ -42,6 +42,20 @@ body {
   background-color: #e0e0e0;
 }
 
+.connect-button {
+  border: none;
+  background-color: #ff9800;
+  color: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: bold;
+}
+
+.connect-button:hover {
+  background-color: #ff990045;
+  cursor: pointer;
+}
+
 .restart {
   border: none;
   background-color: #ff9800;

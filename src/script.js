@@ -1,60 +1,73 @@
-const socket = new WebSocket(
-  window.location.hostname === "localhost"
-    ? "ws://localhost:8080"
-    : "wss://jogo-da-velha-ijfk.onrender.com"
-);
-
+let socket = null;
 let playerId = null;
 let isMyTurn = false;
 
-socket.onopen = () => {
-  console.log("Conectado ao servidor WebSocket!");
-};
-
-socket.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-
-  if (data.type === "assignId") {
-    playerId = data.playerId;
-    console.log("Meu ID único:", playerId);
+function connectPlayers() {
+  if (socket) {
+    console.log("Já conectado!");
+    return; 
   }
 
-  if (data.type === "turn") {
-    isMyTurn = data.currentTurn === playerId;
-    updateBoardState();
-  }
+  socket = new WebSocket(
+    window.location.hostname === "localhost"
+      ? "ws://localhost:8080"
+      : "wss://jogo-da-velha-ijfk.onrender.com"
+  );
 
-  if (data.type === "move") {
-    const { index, player } = data;
-    squares[index].classList.add(player);
-    is_x = player === "x" ? false : true;
-  }
+  socket.onopen = () => {
+    console.log("Conectado ao servidor WebSocket!");
+    yourTurn.append("Aguardando outro jogador entrar na sala...");
+  };
 
-  if (data.type === "winner") {
-    const { line } = data;
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
 
-    winningLine.classList.add(line);
-    board.classList.add("opacity");
-    board.classList.add("block-game");
-  }
+    if (data.type === "other-player-connected") {
+      yourTurn.firstChild.remove();
+    }
 
-  if (data.type === "restart") {
-    restartGame();
-  }
+    if (data.type === "assignId") {
+      playerId = data.playerId;
+      console.log("Meu ID único:", playerId);
+    }
 
-  if (data.type === "end") {
-    endGame(true);
-  }
-};
+    if (data.type === "turn") {
+      isMyTurn = data.currentTurn === playerId;
+      updateBoardState();
+    }
 
-socket.onerror = (error) => {
-  console.error("Erro no WebSocket:", error);
-};
+    if (data.type === "move") {
+      const { index, player } = data;
+      squares[index].classList.add(player);
+      is_x = player === "x" ? false : true;
+    }
+
+    if (data.type === "winner") {
+      const { line } = data;
+      winningLine.classList.add(line);
+      board.classList.add("opacity");
+      board.classList.add("block-game");
+    }
+
+    if (data.type === "restart") {
+      restartGame();
+    }
+
+    if (data.type === "end") {
+      endGame(true);
+    }
+  };
+
+  socket.onerror = (error) => {
+    console.error("Erro no WebSocket:", error);
+  };
+}
 
 const board = document.querySelector(".board");
 const squares = document.querySelectorAll(".cell");
 const winningLine = document.querySelector(".winning-line");
-const restart = document.querySelector("button");
+const restart = document.querySelector(".restart");
+const connectPlayersButton = document.querySelector(".connect-button");
 
 const yourTurn = document.querySelector(".your-turn");
 const yourTurnText = document.createTextNode("Sua vez");
@@ -69,29 +82,43 @@ empate.setAttribute("class", "draw-message");
 let is_x = true;
 let hasWinner = false;
 
-const diagonal = [1, 5, 9];
-const antiDiagonal = [3, 5, 7];
-const vertical = [2, 5, 8];
-const horizontal = [4, 5, 6];
-
-const upHorizontal = [1, 2, 3];
-const downHorizontal = [7, 8, 9];
-
-const leftVertical = [1, 4, 7];
-const rightVertical = [3, 6, 9];
-
-const edges = [1, 9, 3, 7];
-const cruz = [2, 8, 4, 6];
-
 const classes = ["o", "x"];
+
+const checkCombinations = () => {
+  const combinations = [
+    { type: "diagonal", combination: [0, 4, 8] },
+    { type: "anti-diagonal", combination: [2, 4, 6] },
+    { type: "vertical-middle", combination: [1, 4, 7] },
+    { type: "vertical-left", combination: [0, 3, 6] },
+    { type: "vertical-right", combination: [2, 5, 8] },
+    { type: "horizontal-middle", combination: [3, 4, 5] },
+    { type: "horizontal-top", combination: [0, 1, 2] },
+    { type: "horizontal-bottom", combination: [6, 7, 8] },
+  ];
+
+  for (const { type, combination } of combinations) {
+    const [a, b, c] = combination;
+
+    if (
+      squares[a].classList.item(1) &&
+      squares[a].classList.item(1) === squares[b].classList.item(1) &&
+      squares[a].classList.item(1) === squares[c].classList.item(1)
+    ) {
+      hasWinner = true;
+      return type;
+    }
+  }
+
+  return null;
+};
+
+connectPlayersButton.addEventListener("click", () => connectPlayers());
 
 squares.forEach((square, index) => {
   square.addEventListener("click", (e) => {
-    if (square.classList.contains("o") || square.classList.contains("x"))
-      return;
-
-    if (square.classList.contains("o") || square.classList.contains("x"))
-      return;
+    if (!socket || square.classList.contains("o") || square.classList.contains("x")) {
+      return; 
+    }
 
     const player = is_x ? "x" : "o";
     square.classList.add(player);
@@ -100,162 +127,10 @@ squares.forEach((square, index) => {
 
     is_x = !is_x;
 
-    if (edges.slice(0, 2).includes(index + 1) || index + 1 === 5) {
-      const squareClass = square.classList.value.slice(-1);
-      const winner = isWinner(squareClass, diagonal);
+    const lineWinner = checkCombinations();
 
-      if (winner) {
-        socket.send(JSON.stringify({ type: "winner", line: "diagonal" }));
-      }
-    }
-
-    if (edges.slice(-2).includes(index + 1) || index + 1 === 5) {
-      const squareClass = square.classList.value.slice(-1);
-      const winner = isWinner(squareClass, antiDiagonal);
-
-      if (winner) {
-        socket.send(JSON.stringify({ type: "winner", line: "anti-diagonal" }));
-      }
-    }
-
-    if (cruz.slice(0, 2).includes(index + 1) || index + 1 === 5) {
-      const squareClass = square.classList.value.slice(-1);
-      const winner = isWinner(squareClass, vertical);
-
-      if (winner) {
-        socket.send(JSON.stringify({ type: "winner", line: "vetical-middle" }));
-      }
-    }
-
-    if (cruz.slice(-2).includes(index + 1) || index + 1 === 5) {
-      const squareClass = square.classList.value.slice(-1);
-      const winner = isWinner(squareClass, horizontal);
-
-      if (winner) {
-        socket.send(
-          JSON.stringify({ type: "winner", line: "horizontal-middle" })
-        );
-      }
-    }
-
-    if (edges[0] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerUp = isWinner(squareClass, upHorizontal);
-      const winnerLeft = isWinner(squareClass, leftVertical);
-
-      if (winnerUp || winnerLeft) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerUp ? "horizontal-top" : "vertical-left",
-          })
-        );
-      }
-    }
-
-    if (edges[2] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerUp = isWinner(squareClass, upHorizontal);
-      const winnerRight = isWinner(squareClass, rightVertical);
-
-      if (winnerUp || winnerRight) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerUp ? "horizontal-top" : "vertical-right",
-          })
-        );
-      }
-    }
-
-    if (edges.at(-1) === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerDown = isWinner(squareClass, downHorizontal);
-      const winnerLeft = isWinner(squareClass, leftVertical);
-
-      if (winnerDown || winnerLeft) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerDown ? "horizontal-bottom" : "vertical-left",
-          })
-        );
-      }
-    }
-
-    if (edges[1] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerDown = isWinner(squareClass, downHorizontal);
-      const winnerRight = isWinner(squareClass, rightVertical);
-
-      if (winnerDown || winnerRight) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerDown ? "horizontal-bottom" : "vertical-right",
-          })
-        );
-      }
-    }
-
-    if (cruz[0] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerMiddle = isWinner(squareClass, vertical);
-      const winnerUp = isWinner(squareClass, upHorizontal);
-
-      if (winnerMiddle || winnerUp) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerMiddle ? "vertical-middle" : "horizontal-top",
-          })
-        );
-      }
-    }
-
-    if (cruz[1] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerMiddle = isWinner(squareClass, horizontal);
-      const winnerDown = isWinner(squareClass, downHorizontal);
-
-      if (winnerMiddle || winnerDown) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerMiddle ? "vertical-middle" : "horizontal-bottom",
-          })
-        );
-      }
-    }
-
-    if (cruz[2] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerMiddle = isWinner(squareClass, horizontal);
-      const winnerLeft = isWinner(squareClass, leftVertical);
-
-      if (winnerMiddle || winnerLeft) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerMiddle ? "horizontal-middle" : "vertical-left",
-          })
-        );
-      }
-    }
-
-    if (cruz[3] === index + 1) {
-      const squareClass = square.classList.value.slice(-1);
-      const winnerMiddle = isWinner(squareClass, horizontal);
-      const winnerRight = isWinner(squareClass, rightVertical);
-
-      if (winnerMiddle || winnerRight) {
-        socket.send(
-          JSON.stringify({
-            type: "winner",
-            line: winnerMiddle ? "horizontal-middle" : "vertical-right",
-          })
-        );
-      }
+    if (lineWinner) {
+      socket.send(JSON.stringify({ type: "winner", line: lineWinner }));
     }
 
     const someElementMissingClass = Array.from(squares).every(
@@ -298,7 +173,9 @@ const restartGame = () => {
 };
 
 restart.addEventListener("click", () => {
-  socket.send(JSON.stringify({ type: "restart" }));
+  if (socket) {
+    socket.send(JSON.stringify({ type: "restart" }));
+  }
 });
 
 const updateBoardState = () => {
@@ -322,18 +199,4 @@ const endGame = (someElementMissingClass) => {
     empate.append(empateText);
     board.appendChild(empate);
   }
-};
-
-const isWinner = (squareClass, direction) => {
-  for (let i = 0; i < direction.length; i++) {
-    const currentSquareClass = squares[direction[i] - 1];
-
-    if (!currentSquareClass.classList.contains(squareClass)) {
-      return false;
-    }
-  }
-
-  hasWinner = true;
-
-  return true;
 };
