@@ -16,9 +16,13 @@ class Rooms {
   }
 
   encontrarSala(playerId) {
-    return this.salas.find((sala) =>
+    const sala = this.salas.find((sala) =>
       sala.jogadores.some((jogador) => jogador.playerId === playerId)
     );
+
+    if (!sala) return;
+
+    return sala;
   }
 
   cleanEmptyRooms() {

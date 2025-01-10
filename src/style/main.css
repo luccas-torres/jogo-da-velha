@@ -205,3 +205,59 @@ body {
   color: red;
   border: 3px solid red;
 }
+
+/* Victory Message */
+.draw-message.victory {
+  color: #ffffff; 
+  font-size: 3rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #1e90ff, #00bfff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  border: 5px solid #00bfff;
+  border-radius: 20px;
+  padding: 20px 60px;
+  text-shadow: 0 0 10px #00bfff, 0 0 20px #1e90ff;
+  box-shadow: 0 0 30px rgba(0, 191, 255, 0.9); 
+  animation: pulse 1.5s infinite;
+  transform-origin: center;
+  position: absolute;
+  top: 33%;
+  left: -5%;
+  transform: translate(-50%, -50%); 
+}
+
+/* Loser Message */
+.draw-message.loser {
+  color: #ff4500; 
+  border: 3px solid #ff4500;
+  background-color: #fff0f0; 
+  box-shadow: 0 4px 6px rgba(255, 69, 0, 0.3);
+  position: absolute; 
+  top: 38%;
+  left: 12%;
+  transform: translate(-50%, -50%); 
+  animation: rotate-loser 1s ease-out, pulse 1.5s infinite;
+}
+
+/* Animation for Victory message */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(0, 191, 255, 0.9), 0 0 60px rgba(0, 191, 255, 0.6);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 50px rgba(0, 191, 255, 1), 0 0 80px rgba(0, 191, 255, 0.8);
+  }
+}
+
+@keyframes rotate-loser {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
