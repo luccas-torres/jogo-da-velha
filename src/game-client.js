@@ -5,7 +5,7 @@ let isMyTurn = false;
 function connectPlayers() {
   if (socket) {
     console.log("Já conectado!");
-    return; 
+    return;
   }
 
   socket = new WebSocket(
@@ -45,6 +45,7 @@ function connectPlayers() {
     if (data.type === "winner") {
       const { line } = data;
       winningLine.classList.add(line);
+      winnerMessage();
       board.classList.add("opacity");
       board.classList.add("block-game");
     }
@@ -116,8 +117,12 @@ connectPlayersButton.addEventListener("click", () => connectPlayers());
 
 squares.forEach((square, index) => {
   square.addEventListener("click", (e) => {
-    if (!socket || square.classList.contains("o") || square.classList.contains("x")) {
-      return; 
+    if (
+      !socket ||
+      square.classList.contains("o") ||
+      square.classList.contains("x")
+    ) {
+      return;
     }
 
     const player = is_x ? "x" : "o";
@@ -187,16 +192,26 @@ const updateBoardState = () => {
     yourTurn.firstChild ? yourTurn.firstChild.remove() : null;
     yourTurn.append(waitOtherPlayer);
     board.classList.add("block-game");
-  } else {
-    yourTurn.remove();
   }
+};
+
+const winnerMessage = () => {
+  empate.textContent = isMyTurn ? "LOSERRR" : "VICTORY";
+  empate.setAttribute(
+    "class",
+    isMyTurn ? "draw-message loser" : "draw-message victory"
+  );
+  board.classList.add("block-game");
+  board.classList.add("opacity");
+  board.appendChild(empate);
 };
 
 const endGame = (someElementMissingClass) => {
   if (!hasWinner && someElementMissingClass) {
     board.classList.add("block-game");
     board.classList.add("opacity");
-    empate.append(empateText);
+    empate.textContent = "EMPATE";
+    empate.setAttribute("class", "draw-message");
     board.appendChild(empate);
   }
 };
